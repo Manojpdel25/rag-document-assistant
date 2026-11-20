@@ -4,7 +4,7 @@ from sentence_transformers import SentenceTransformer
 from chunking import chunk_pages
 from load_pdf import load_pdf
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
+EMBED_MODEL = "nomic-embed-text"
 
 
 def build_index(chunks):
