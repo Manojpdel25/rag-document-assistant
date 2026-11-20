@@ -1,5 +1,5 @@
 import numpy as np
-from sentence_transformers import SentenceTransformer
+import ollama
 
 from chunking import chunk_pages
 from load_pdf import load_pdf
@@ -7,14 +7,24 @@ from load_pdf import load_pdf
 EMBED_MODEL = "nomic-embed-text"
 
 
+def embed(texts, batch_size=32):
+    """Turn texts into normalized embeddings with a local Ollama model."""
+    vectors = []
+    for i in range(0, len(texts), batch_size):
+        response = ollama.embed(model=EMBED_MODEL, input=texts[i:i + batch_size])
+        vectors.extend(response["embeddings"])
+    arr = np.array(vectors, dtype=float)
+    return arr / np.linalg.norm(arr, axis=1, keepdims=True)
+
+
 def build_index(chunks):
-    """Turn every chunk into an embedding (a list of numbers)."""
-    return model.encode([c["text"] for c in chunks], normalize_embeddings=True)
+    """Embed every chunk."""
+    return embed([c["text"] for c in chunks])
 
 
 def search(question, chunks, embeddings, top_k=3):
     """Return the chunks whose meaning is closest to the question."""
-    q = model.encode([question], normalize_embeddings=True)[0]
+    q = embed([question])[0]
     scores = embeddings @ q
     best = np.argsort(scores)[::-1][:top_k]
     return [(float(scores[i]), chunks[i]) for i in best]
